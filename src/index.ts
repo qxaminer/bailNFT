@@ -15,8 +15,9 @@ const bgScene = new THREE.Scene();
 const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
 const bgUniforms = {
-  uTime:  { value: 0.0 },
-  uSpeed: { value: 1.0 },
+  uTime:    { value: 0.0 },
+  uSpeed:   { value: 1.0 },
+  uHorizon: { value: 0.5 },
 };
 
 const bgMaterial = new THREE.ShaderMaterial({
@@ -32,26 +33,39 @@ const bgMaterial = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */ `
     uniform float uTime;
     uniform float uSpeed;
+    uniform float uHorizon;
     varying vec2 vUv;
 
     void main() {
-      // Scroll horizontally over time
-      float offset = uTime * uSpeed * 0.08;
-      float t = fract(vUv.x + offset);
+      // Diagonal scroll: plane moves up-left, so air rushes down-right
+      float scrollX = uTime * uSpeed * 0.3;
+      float scrollY = uTime * uSpeed * 0.4;
+      vec2 uv = vec2(vUv.x + scrollX, vUv.y + scrollY);
 
-      // Warm hand-drawn palette: cream → gold → coral → cream
-      vec3 cream = vec3(1.000, 0.973, 0.910); // #FFF8E8
-      vec3 gold  = vec3(1.000, 0.820, 0.400); // #FFD166
-      vec3 coral = vec3(0.937, 0.545, 0.353); // #EF8B5A
+      // Sky gradient: remap vUv.y around the horizon control point
+      // uHorizon=0.5 → horizon in the middle; higher pushes it up
+      float gradT = clamp((vUv.y - (1.0 - uHorizon)) / uHorizon + 0.5, 0.0, 1.0);
 
-      vec3 color;
-      if (t < 0.33) {
-        color = mix(cream, gold,  t / 0.33);
-      } else if (t < 0.66) {
-        color = mix(gold,  coral, (t - 0.33) / 0.33);
+      vec3 deepBlue  = vec3(0.102, 0.431, 0.710); // #1a6eb5 — top
+      vec3 skyBlue   = vec3(0.529, 0.808, 0.922); // #87CEEB — mid
+      vec3 hazeWhite = vec3(0.784, 0.910, 0.961); // #c8e8f5 — horizon
+
+      vec3 skyColor;
+      if (gradT > 0.5) {
+        skyColor = mix(skyBlue, deepBlue, (gradT - 0.5) * 2.0);
       } else {
-        color = mix(coral, cream, (t - 0.66) / 0.34);
+        skyColor = mix(hazeWhite, skyBlue, gradT * 2.0);
       }
+
+      // Cloud streaks — subtle horizontal bands scrolling diagonally
+      vec3 streakColor = vec3(0.910, 0.957, 0.973); // #e8f4f8
+      float streak1 = sin(uv.y * 18.0 + 1.2) * sin(uv.x * 3.0 - 0.5);
+      float streak2 = sin(uv.y * 26.0 - 2.1) * sin(uv.x * 2.2 + 1.1);
+      float streak3 = sin(uv.y * 11.0 + 3.7) * sin(uv.x * 4.1 - 2.3);
+      float streaks  = clamp(streak1 * 0.5 + streak2 * 0.35 + streak3 * 0.4, 0.0, 1.0);
+      float streakOpacity = mix(0.15, 0.25, streaks);
+
+      vec3 color = mix(skyColor, streakColor, streakOpacity * streaks);
 
       gl_FragColor = vec4(color, 1.0);
     }
@@ -155,6 +169,7 @@ const gui = new dat.GUI();
 
 const params = {
   bgSpeed:        1.0,
+  horizon:        0.5,
   playbackRate:   1.0,
   videoScale:     1.0,
   whiteThreshold: 0.85,
@@ -162,8 +177,13 @@ const params = {
 
 gui
   .add(params, "bgSpeed", 0.0, 3.0, 0.01)
-  .name("BG Scroll Speed")
+  .name("wind speed")
   .onChange((v: number) => { bgUniforms.uSpeed.value = v; });
+
+gui
+  .add(params, "horizon", 0.0, 1.0, 0.01)
+  .name("horizon")
+  .onChange((v: number) => { bgUniforms.uHorizon.value = v; });
 
 gui
   .add(params, "playbackRate", 0.25, 2.0, 0.05)
