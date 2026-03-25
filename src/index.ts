@@ -20,8 +20,9 @@ const SKY_MOODS = [
 ];
 
 const mood = SKY_MOODS[Math.floor(Math.random() * SKY_MOODS.length)];
-const initSpeed   = 0.6 + Math.random() * 1.6;   // 0.6 – 2.2
-const initHorizon = 0.35 + Math.random() * 0.45;  // 0.35 – 0.8
+const initSpeed    = 0.6 + Math.random() * 1.6;   // 0.6 – 2.2
+const initHorizon  = 0.35 + Math.random() * 0.45; // 0.35 – 0.8
+const initPlayback = 0.75 + Math.random() * 0.75; // 0.75 – 1.5
 
 // ---- Background: full-screen quad with scrolling GLSL gradient ----
 const bgScene = new THREE.Scene();
@@ -182,8 +183,6 @@ if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
 
 // ---- dat.GUI ----
 const gui = new dat.GUI();
-
-const initPlayback = 0.75 + Math.random() * 0.75; // 0.75 – 1.5
 
 const params = {
   mood:           mood.name,
