@@ -2,7 +2,7 @@
 
 https://github.com/qxaminer/bailNFT
 
-A Three.js interactive piece featuring a hand-drawn animated figure flying through a procedurally generated sky.
+A Three.js interactive piece featuring a hand-drawn animated figure flying through a procedurally generated sky. **Every reload is unique** — the sky mood, wind speed, horizon, and animation speed are randomized on each load.
 
 ![preview](src/assets/preview.png)
 
@@ -13,7 +13,8 @@ A Three.js interactive piece featuring a hand-drawn animated figure flying throu
 - Plays a video of a hand-drawn airplane animation keyed over a white background (white pixels are discarded in a GLSL fragment shader, making them transparent)
 - Renders a scrolling sky background with cloud streaks via a custom GLSL shader — the scroll direction matches the airplane's flight angle
 - The figure slides in with a spring animation (GSAP) on load
-- A dat.GUI control panel lets you tweak the scene in real time:
+- **Randomized on every reload:** sky color palette (day / dawn / dusk / storm / golden), wind speed, horizon position, and video playback rate are all picked fresh each time
+- A dat.GUI control panel lets you tweak the scene in real time (shows the current sky mood and randomized values):
   - **wind speed** — how fast the sky scrolls
   - **horizon** — vertical position of the sky gradient
   - **Playback Rate** — speed of the video
