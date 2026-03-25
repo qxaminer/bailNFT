@@ -1,5 +1,7 @@
 # bailNFT — *To Bail or Not to Bail*
 
+https://github.com/qxaminer/bailNFT
+
 A Three.js interactive piece featuring a hand-drawn animated figure flying through a procedurally generated sky.
 
 ![preview](src/assets/preview.png)
