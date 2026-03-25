@@ -10,14 +10,30 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.autoClear = false; // manual clear so we can render two scenes
 document.body.appendChild(renderer.domElement);
 
+// ---- Sky palettes — picked randomly each load ----
+const SKY_MOODS = [
+  { name: "day",   deep: [0.102, 0.431, 0.710], mid: [0.529, 0.808, 0.922], haze: [0.784, 0.910, 0.961] },
+  { name: "dawn",  deep: [0.561, 0.220, 0.490], mid: [0.941, 0.549, 0.310], haze: [0.988, 0.839, 0.690] },
+  { name: "dusk",  deep: [0.110, 0.082, 0.251], mid: [0.741, 0.290, 0.290], haze: [0.980, 0.620, 0.380] },
+  { name: "storm", deep: [0.098, 0.118, 0.157], mid: [0.310, 0.380, 0.439], haze: [0.569, 0.600, 0.620] },
+  { name: "golden",deep: [0.290, 0.180, 0.059], mid: [0.871, 0.620, 0.200], haze: [0.988, 0.890, 0.608] },
+];
+
+const mood = SKY_MOODS[Math.floor(Math.random() * SKY_MOODS.length)];
+const initSpeed   = 0.6 + Math.random() * 1.6;   // 0.6 – 2.2
+const initHorizon = 0.35 + Math.random() * 0.45;  // 0.35 – 0.8
+
 // ---- Background: full-screen quad with scrolling GLSL gradient ----
 const bgScene = new THREE.Scene();
 const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
 const bgUniforms = {
-  uTime:    { value: 0.0 },
-  uSpeed:   { value: 1.0 },
-  uHorizon: { value: 0.5 },
+  uTime:      { value: 0.0 },
+  uSpeed:     { value: initSpeed },
+  uHorizon:   { value: initHorizon },
+  uDeepBlue:  { value: new THREE.Vector3(...mood.deep) },
+  uSkyBlue:   { value: new THREE.Vector3(...mood.mid)  },
+  uHazeWhite: { value: new THREE.Vector3(...mood.haze) },
 };
 
 const bgMaterial = new THREE.ShaderMaterial({
@@ -34,6 +50,9 @@ const bgMaterial = new THREE.ShaderMaterial({
     uniform float uTime;
     uniform float uSpeed;
     uniform float uHorizon;
+    uniform vec3 uDeepBlue;
+    uniform vec3 uSkyBlue;
+    uniform vec3 uHazeWhite;
     varying vec2 vUv;
 
     void main() {
@@ -46,15 +65,11 @@ const bgMaterial = new THREE.ShaderMaterial({
       // uHorizon=0.5 → horizon in the middle; higher pushes it up
       float gradT = clamp((vUv.y - (1.0 - uHorizon)) / uHorizon + 0.5, 0.0, 1.0);
 
-      vec3 deepBlue  = vec3(0.102, 0.431, 0.710); // #1a6eb5 — top
-      vec3 skyBlue   = vec3(0.529, 0.808, 0.922); // #87CEEB — mid
-      vec3 hazeWhite = vec3(0.784, 0.910, 0.961); // #c8e8f5 — horizon
-
       vec3 skyColor;
       if (gradT > 0.5) {
-        skyColor = mix(skyBlue, deepBlue, (gradT - 0.5) * 2.0);
+        skyColor = mix(uSkyBlue, uDeepBlue, (gradT - 0.5) * 2.0);
       } else {
-        skyColor = mix(hazeWhite, skyBlue, gradT * 2.0);
+        skyColor = mix(uHazeWhite, uSkyBlue, gradT * 2.0);
       }
 
       // Cloud streaks — subtle horizontal bands scrolling diagonally
@@ -96,6 +111,7 @@ video.autoplay = true;
 video.muted = true;
 video.loop = true;
 video.playsInline = true;
+video.playbackRate = initPlayback;
 video.play().catch(() => {
   // Autoplay blocked — texture will update once user interacts
 });
@@ -167,13 +183,18 @@ if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
 // ---- dat.GUI ----
 const gui = new dat.GUI();
 
+const initPlayback = 0.75 + Math.random() * 0.75; // 0.75 – 1.5
+
 const params = {
-  bgSpeed:        1.0,
-  horizon:        0.5,
-  playbackRate:   1.0,
+  mood:           mood.name,
+  bgSpeed:        initSpeed,
+  horizon:        initHorizon,
+  playbackRate:   initPlayback,
   videoScale:     1.0,
   whiteThreshold: 0.85,
 };
+
+gui.add(params, "mood").name("sky mood").listen();
 
 gui
   .add(params, "bgSpeed", 0.0, 3.0, 0.01)
